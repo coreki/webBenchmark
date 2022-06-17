@@ -229,10 +229,10 @@ func nslookup(targetAddress, server string) (res []string) {
 	return
 }
 
-func goFun(Url string, postContent string, Referer string, XforwardFor bool, customIP ipArray, wg *sync.WaitGroup) {
+func goFun(Url string, postContent string, Referer string, XforwardFor bool, customIP ipArray,AppendRandomStr string, wg *sync.WaitGroup) {
 	defer func() {
 		if r := recover(); r != nil {
-			go goFun(Url, postContent, Referer, XforwardFor, customIP, wg)
+			go goFun(Url, postContent, Referer, XforwardFor, customIP,AppendRandomStr, wg)
 		}
 	}()
 
@@ -277,6 +277,10 @@ func goFun(Url string, postContent string, Referer string, XforwardFor bool, cus
 		client := &http.Client{
 			Transport: transport,
 			Timeout: time.Second*10,
+		}
+		if AppendRandomStr != "" {
+			timeUnixNano:=time.Now().UnixNano()
+			Url += fmt.Sprintf("%s%d", AppendRandomStr, timeUnixNano)	
 		}
 		if len(postContent) > 0 {
 			request, err1 = http.NewRequest("POST", Url, strings.NewReader(postContent))
@@ -335,6 +339,7 @@ var url = flag.String("s", "http://speedtest4.tele2.net/1GB.zip", "target url")
 var postContent = flag.String("p", "", "post content")
 var referer = flag.String("r", "", "referer url")
 var xforwardfor = flag.Bool("f", true, "randomized X-Forwarded-For and X-Real-IP address")
+var appendRandomStr = flag.String("a", "", "append random string,-a t=")
 var TerminalWriter = goterminal.New(os.Stdout)
 var customIP ipArray
 var headers headersList
@@ -380,7 +385,7 @@ func main() {
 	}
 	for i := 0; i < routines; i++ {
 		waitgroup.Add(1)
-		go goFun(*url, *postContent, *referer, *xforwardfor, customIP, &waitgroup)
+		go goFun(*url, *postContent, *referer, *xforwardfor, customIP,*appendRandomStr, &waitgroup)
 	}
 	waitgroup.Wait()
 	TerminalWriter.Reset()
